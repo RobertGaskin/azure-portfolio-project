@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Portfolio Project</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #1f2937;
+            padding: 40px;
+        }
+        .card {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+        h1 { color: #2563eb; }
+        code {
+            background: #eef2ff;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Azure Portfolio Project</h1>
+        <p>This Flask app was deployed from GitHub to Azure App Service.</p>
+        <p><strong>Environment:</strong> {{ environment }}</p>
+        <p><strong>Container Hostname:</strong> <code>{{ hostname }}</code></p>
+        <p><strong>Built by:</strong> Robert Gaskin</p>
+    </div>
+</body>
+</html>
