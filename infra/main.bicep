@@ -1,9 +1,9 @@
 targetScope = 'resourceGroup'
 
-param location string = 'westus3'
+param location string = 'southafricanorth'
 
 @minLength(3)
-param appName string
+param vmName string = 'Gaskin-WIN-VM'
 
 @minLength(3)
 param adminUsername string
@@ -11,51 +11,14 @@ param adminUsername string
 @secure()
 param adminPassword string
 
-var appServicePlanName = '${appName}-plan'
-var webAppName = '${appName}-web'
-var vnetName = '${appName}-vnet'
-var subnetName = 'app-subnet'
-var nsgName = '${appName}-nsg'
-var pipName = '${appName}-pip'
-var nicName = '${appName}-nic'
-var vmName = '${appName}-vm'
-
-resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
-  name: appServicePlanName
-  location: location
-  sku: {
-    name: 'B1'
-    tier: 'Basic'
-  }
-  kind: 'linux'
-  properties: {
-    reserved: true
-  }
-}
-
-resource webApp 'Microsoft.Web/sites@2023-12-01' = {
-  name: webAppName
-  location: location
-  kind: 'app,linux'
-  properties: {
-    serverFarmId: appServicePlan.id
-    httpsOnly: true
-    siteConfig: {
-      linuxFxVersion: 'PYTHON|3.12'
-      appSettings: [
-        {
-          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          value: 'true'
-        }
-        {
-          name: 'APP_ENV'
-          value: 'Production'
-        }
-      ]
-      appCommandLine: 'gunicorn --bind=0.0.0.0 --timeout 600 app:app'
-    }
-  }
-}
+var vnetName = '${vmName}-vnet'
+var subnetName = 'default'
+var nicName = '${toLower(vmName)}-nic'
+var pipName = '${toLower(vmName)}-pip'
+var nsgName = '${toLower(vmName)}-nsg'
+var osDiskName = '${vmName}_OsDisk_1'
+var addressPrefix = '10.0.0.0/16'
+var subnetPrefix = '10.0.0.0/24'
 
 resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   name: nsgName
@@ -63,7 +26,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   properties: {
     securityRules: [
       {
-        name: 'allow-ssh'
+        name: 'allow-rdp'
         properties: {
           priority: 1000
           protocol: 'Tcp'
@@ -72,7 +35,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
           sourceAddressPrefix: '*'
           sourcePortRange: '*'
           destinationAddressPrefix: '*'
-          destinationPortRange: '22'
+          destinationPortRange: '3389'
         }
       }
       {
@@ -98,16 +61,17 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   properties: {
     addressSpace: {
       addressPrefixes: [
-        '10.10.0.0/16'
+        addressPrefix
       ]
     }
   }
 }
 
 resource subnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' = {
-  name: '${vnet.name}/${subnetName}'
+  name: subnetName
+  parent: vnet
   properties: {
-    addressPrefix: '10.10.1.0/24'
+    addressPrefix: subnetPrefix
     networkSecurityGroup: {
       id: nsg.id
     }
@@ -120,6 +84,9 @@ resource publicIP 'Microsoft.Network/publicIPAddresses@2024-05-01' = {
   sku: {
     name: 'Standard'
   }
+  zones: [
+    '1'
+  ]
   properties: {
     publicIPAllocationMethod: 'Static'
   }
@@ -149,42 +116,59 @@ resource nic 'Microsoft.Network/networkInterfaces@2024-05-01' = {
 resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
   name: vmName
   location: location
+  zones: [
+    '1'
+  ]
   properties: {
     hardwareProfile: {
-      vmSize: 'Standard_B1ms'
+      vmSize: 'Standard_D2s_v3'
+    }
+    securityProfile: {
+      securityType: 'TrustedLaunch'
+      uefiSettings: {
+        secureBootEnabled: true
+        vTpmEnabled: true
+      }
     }
     osProfile: {
       computerName: vmName
       adminUsername: adminUsername
       adminPassword: adminPassword
-      linuxConfiguration: {
-        disablePasswordAuthentication: false
+      windowsConfiguration: {
+        provisionVMAgent: true
+        enableAutomaticUpdates: true
       }
     }
     storageProfile: {
       imageReference: {
-        publisher: 'Canonical'
-        offer: '0001-com-ubuntu-server-jammy'
-        sku: '22_04-lts'
+        publisher: 'MicrosoftWindowsServer'
+        offer: 'WindowsServer'
+        sku: '2025-datacenter-g2'
         version: 'latest'
       }
       osDisk: {
+        name: osDiskName
         createOption: 'FromImage'
         managedDisk: {
           storageAccountType: 'Standard_LRS'
         }
       }
+      dataDisks: []
     }
     networkProfile: {
       networkInterfaces: [
         {
           id: nic.id
+          properties: {
+            primary: true
+          }
         }
       ]
     }
   }
 }
 
-output webAppName string = webApp.name
-output webAppUrl string = 'https://${webApp.properties.defaultHostName}'
-output vmPublicIP string = publicIP.properties.ipAddress
+output vmName string = vm.name
+output publicIPAddress string = publicIP.properties.ipAddress
+output privateIPAddress string = nic.properties.ipConfigurations[0].properties.privateIPAddress
+output vnetName string = vnet.name
