@@ -1,4 +1,6 @@
-#This project demonstrates deploying Azure infrastructure using Bicep Infrastructure as Code. The goal of the project is to automate Azure resource deployment using reusable templates and parameterized configurations.
+Azure Infrastructure as Code Project
+
+This project demonstrates deploying Azure infrastructure using Bicep Infrastructure as Code. The goal of the project is to automate Azure resource deployment using reusable templates and parameterized configurations.
 
 The environment was deployed and tested using Azure CLI and GitHub version control to simulate a real cloud engineering workflow.
 
@@ -6,7 +8,7 @@ The environment was deployed and tested using Azure CLI and GitHub version contr
 
 Architecture Overview
 
-The deployment provisions a basic Azure environment that includes:
+The deployment provisions a basic Azure environment that includes
 
 • Azure Virtual Network
 • Subnet configuration
@@ -17,7 +19,25 @@ The deployment provisions a basic Azure environment that includes:
 
 This project demonstrates how cloud infrastructure can be automated and deployed consistently across environments.
 
-⸻
+                Internet
+                    |
+              Public IP
+                    |
+               Network
+              Interface
+                    |
+             Virtual Machine
+             Gaskin WIN VM
+                    |
+                 Subnet
+                 default
+                    |
+             Virtual Network
+         Gaskin WIN VM vnet
+                    |
+          Network Security Group
+          allow RDP 3389
+          allow HTTP 80
 
 Technologies Used
 
@@ -50,13 +70,16 @@ This demonstrates automated infrastructure provisioning and cloud environment se
 
 Deployment Method
 
-Infrastructure was deployed using the Azure CLI with the following command structure:
-az deployment group create \
---resource-group rg-azure-portfolio \
---template-file main.bicep \
+Infrastructure was deployed using the Azure CLI with the following command
+az deployment group create
+--resource-group rg-azure-portfolio
+--template-file main.bicep
 --parameters main.parameters.json
 This deployment method enables repeatable infrastructure provisioning using Infrastructure as Code practices.
+
 ⸻
+
+Future Improvements
 
 Planned improvements include
 
@@ -65,5 +88,3 @@ Planned improvements include
 • Azure Monitor and logging integration
 • Additional networking security controls
 • Automated scaling configurations
-
-
